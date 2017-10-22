@@ -51,7 +51,7 @@ get '/feed' do
     end
   end
 
-  content_type 'application/xml'
+  content_type 'application/rss+xml', :charset => 'utf-8'
   rss.to_s
 end
 
