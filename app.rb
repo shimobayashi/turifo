@@ -14,14 +14,30 @@ get '/' do
 end
 
 get '/feed' do
-  feed = FeedNormalizer::FeedNormalizer.parse open('https://fishing.ne.jp/fishingpost/area/kobe-tobu/feed')
+  entries = [
+    'https://fishing.ne.jp/fishingpost/area/kobe-tobu/feed',
+    'https://fishing.ne.jp/fishingpost/area/wakayama/feed',
+  ].map{|url|
+    feed = FeedNormalizer::FeedNormalizer.parse(open(url))
+    feed.entries.each{|entry|
+      # 主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく
+      entry.date_published = feed.last_updated if (entry.date_published.year < 0)
+    }
+    feed.entries
+  }.flatten.sort_by{|entry|
+    # entry.date_publishedが被っているケースがある。
+    # カンパリのフィードのentry.date_publishedを書き換えた場合などが該当する。
+    # そうしたときに少しでもそれらしい並びになるよう、entry.urlも考慮するようにしている。
+    # カンパリのフィードはentry.urlがオートインクリメントされているようなので、単一フィード内であればそれできれいに並ぶ。
+    "#{entry.date_published}#{entry.url}"
+  }.reverse
 
   rss = RSS::Maker.make('2.0') do |rss|
     rss.channel.title = 'turifo'
     rss.channel.description = 'Filtering info will here?'
     rss.channel.link = "#{base_url}#{request.fullpath}"
 
-    feed.entries.each do |entry|
+    entries.each do |entry|
       item = rss.items.new_item
       item.title = entry.title
       item.link = entry.url
