@@ -5,7 +5,7 @@ require 'rss/maker'
 require 'mongoid'
 require 'haml'
 
-require_relative 'lib/model/settings'
+require_relative 'lib/models/settings'
 
 Mongoid.load!('config/mongoid.yml')
 
