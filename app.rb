@@ -15,11 +15,19 @@ end
 
 get '/feed' do
   entries = [
-    'https://fishing.ne.jp/fishingpost/area/kobe-tobu/feed',
+    'https://fishing.ne.jp/fishingpost/area/kyoto/feed',
+    'https://fishing.ne.jp/fishingpost/area/fukui/feed',
     'https://fishing.ne.jp/fishingpost/area/wakayama/feed',
+    'https://fishing.ne.jp/fishingpost/area/kobe-tobu/feed',
+    'https://fishing.ne.jp/fishingpost/area/osaka/feed',
+    'https://fishing.ne.jp/fishingpost/area/shizuoka-hamanako/feed',
+    'https://fishing.ne.jp/fishingpost/area/kobe-seibu/feed',
+    'https://fishing.ne.jp/fishingpost/area/aichi/feed',
   ].map{|url|
     feed = FeedNormalizer::FeedNormalizer.parse(open(url))
     feed.entries.each{|entry|
+      # マージするので元のフィードが分かるようにentry.titleをいじっておく
+      entry.title = "#{entry.title} - #{feed.title}"
       # 主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく
       entry.date_published = feed.last_updated if (entry.date_published.year < 0)
     }
@@ -44,7 +52,7 @@ get '/feed' do
       item.title = entry.title
       item.link = entry.url
       item.guid.content = entry.url
-      # 便宜上entry.urlを利用しているだけで、パーマリンクとして処理して欲しいわけではない。
+      # 便宜上entry.urlをguidに利用しているだけで、パーマリンクとして処理して欲しいわけではない。
       item.guid.isPermaLink = false
       item.description = entry.content
       item.date = entry.date_published
