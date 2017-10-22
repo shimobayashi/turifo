@@ -37,7 +37,7 @@ get '/feed' do
   rss = RSS::Maker.make('2.0') do |rss|
     rss.channel.title = "#{get_settings.filtering_regexp_str} - turifo"
     rss.channel.description = 'Filtered fishing infomations.'
-    rss.channel.link = "#{base_url}feed"
+    rss.channel.link = "#{base_url}"
 
     entries.each do |entry|
       item = rss.items.new_item
