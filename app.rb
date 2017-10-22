@@ -2,6 +2,12 @@ require 'sinatra'
 require 'feed-normalizer'
 require 'open-uri'
 require 'rss/maker'
+require 'mongoid'
+require 'haml'
+
+require_relative 'lib/model/settings'
+
+Mongoid.load!('config/mongoid.yml')
 
 helpers do
   def base_url
@@ -10,7 +16,16 @@ helpers do
 end
 
 get '/' do
-  'hello world!'
+  @settings = get_settings
+  haml :index
+end
+
+post '/settings' do
+  settings = get_settings
+  settings.filtering_regexp_str = params[:filtering_regexp_str]
+  halt 503, "Failed to save settings: #{settings.errors.full_messages.join(', ')}" unless settings.save
+
+  redirect base_url
 end
 
 get '/feed' do
@@ -35,6 +50,12 @@ get '/feed' do
 
   content_type 'application/xml'
   rss.to_s
+end
+
+def get_settings
+  Settings.first || Settings.new({
+    filtering_regexp_str: '',
+  })
 end
 
 def get_entries

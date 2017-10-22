@@ -1,0 +1,11 @@
+!!! XML
+!!!
+%html
+  %head
+    %title= "turifo"
+    %base{href: base_url}
+    %link{href: "./feed" , rel: 'alternate', title: 'RSS', type: 'application/xml'}
+%body
+  %a{href: './'}
+    %h1 turifo
+  != yield

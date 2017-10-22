@@ -1,0 +1,18 @@
+development:
+  sessions:
+    default:
+      hosts:
+        - localhost
+      database: turifo_development
+      options:
+        timeout: 3
+        max_retries: 5
+production:
+  sessions:
+    default:
+      hosts:
+        - localhost
+      database: turifo_production
+      options:
+        timeout: 3
+        max_retries: 5

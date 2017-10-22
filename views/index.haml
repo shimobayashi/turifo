@@ -1,0 +1,3 @@
+%form{action: './settings', method: :post}
+  %input{type: :text, name: :filtering_regexp_str, placeholder: '(イカ|タチウオ|サゴシ)', value: @settings.filtering_regexp_str}
+  %input#submit{type: :submit}
