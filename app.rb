@@ -24,7 +24,9 @@ get '/feed' do
       entry.date_published = feed.last_updated if (entry.date_published.year < 0)
     }
     feed.entries
-  }.flatten.sort_by{|entry|
+  }.flatten.select{|entry|
+    "#{entry.title}#{entry.description}" =~ /(イカ|タチウオ|サゴシ)/
+  }.sort_by{|entry|
     # entry.date_publishedが被っているケースがある。
     # カンパリのフィードのentry.date_publishedを書き換えた場合などが該当する。
     # そうしたときに少しでもそれらしい並びになるよう、entry.urlも考慮するようにしている。
