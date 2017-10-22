@@ -32,8 +32,8 @@ get '/feed' do
   entries = get_entries
 
   rss = RSS::Maker.make('2.0') do |rss|
-    rss.channel.title = 'turifo'
-    rss.channel.description = 'Filtering info will here?'
+    rss.channel.title = "#{get_settings.filtering_regexp_str} - turifo"
+    rss.channel.description = 'Filtered fishing infomations.'
     rss.channel.link = "#{base_url}#{request.fullpath}"
 
     entries.each do |entry|
