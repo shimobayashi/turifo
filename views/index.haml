@@ -1,3 +1,11 @@
 %form{action: './settings', method: :post}
-  %input{type: :text, name: :filtering_regexp_str, placeholder: '(イカ|タチウオ|サゴシ)', value: @settings.filtering_regexp_str}
+  %p
+    %label{for: :filtering_regexp_str}
+      絞り込む正規表現
+    %input{type: :text, name: :filtering_regexp_str, placeholder: '(イカ|タチウオ|サゴシ)', value: @settings.filtering_regexp_str, size: 100}
+  - [@settings.source_urls, ''].flatten.each do |url|
+    %p
+      %label{for: 'source_url[]'}
+        ソースURL
+      %input{type: :text, name: 'source_url[]', placeholder: 'http://example.com/feed.xml', value: url, size: 100}
   %input#submit{type: :submit}

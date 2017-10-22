@@ -22,7 +22,10 @@ end
 
 post '/settings' do
   settings = get_settings
+
   settings.filtering_regexp_str = params[:filtering_regexp_str]
+  settings.source_urls = params[:source_url].select{|url| url != ''}
+
   halt 503, "Failed to save settings: #{settings.errors.full_messages.join(', ')}" unless settings.save
 
   redirect base_url
@@ -53,22 +56,11 @@ get '/feed' do
 end
 
 def get_settings
-  Settings.first || Settings.new({
-    filtering_regexp_str: '',
-  })
+  Settings.first || Settings.new
 end
 
 def get_entries
-  entries = [
-    'https://fishing.ne.jp/fishingpost/area/kyoto/feed',
-    'https://fishing.ne.jp/fishingpost/area/fukui/feed',
-    'https://fishing.ne.jp/fishingpost/area/wakayama/feed',
-    'https://fishing.ne.jp/fishingpost/area/kobe-tobu/feed',
-    'https://fishing.ne.jp/fishingpost/area/osaka/feed',
-    'https://fishing.ne.jp/fishingpost/area/shizuoka-hamanako/feed',
-    'https://fishing.ne.jp/fishingpost/area/kobe-seibu/feed',
-    'https://fishing.ne.jp/fishingpost/area/aichi/feed',
-  ].map{|url|
+  entries = get_settings.source_urls.map{|url|
     feed = FeedNormalizer::FeedNormalizer.parse(open(url))
     feed.entries.each{|entry|
       # マージするので元のフィードが分かるようにentry.titleをいじっておく
