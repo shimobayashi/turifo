@@ -89,7 +89,8 @@ def get_entries
 end
 
 def filter_entries(entries)
+  regexp = get_settings.filtering_regexp
   entries.select{|entry|
-    "#{entry.title}#{entry.description}" =~ /(イカ|タチウオ|サゴシ)/
+    "#{entry.title}#{entry.description}" =~ regexp
   }
 end
