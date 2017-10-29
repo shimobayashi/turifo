@@ -32,11 +32,11 @@ post '/settings' do
 end
 
 get '/feed' do
-  entries = get_entries
+  (entries, errors) = get_entries_and_errors
 
   rss = RSS::Maker.make('2.0') do |rss|
     rss.channel.title = "#{get_settings.filtering_regexp_str} - turifo"
-    rss.channel.description = 'Filtered fishing infomations.'
+    rss.channel.description = errors.size > 0 ? errors.join("\n") : 'There is no error.'
     rss.channel.link = "#{base_url}"
 
     entries.each do |entry|
@@ -60,7 +60,8 @@ def get_settings
   Settings.first || Settings.new
 end
 
-def get_entries
+def get_entries_and_errors
+  errors = []
   entries = get_settings.source_urls.map{|url|
     feed = FeedNormalizer::FeedNormalizer.parse(open(url))
     if feed
@@ -72,17 +73,20 @@ def get_entries
       }
       feed.entries
     else
+      errors << "Failed to fetch: #{url}"
       []
     end
   }.flatten
   entries = filter_entries(entries)
-  entries.sort_by{|entry|
+  entries = entries.sort_by{|entry|
     # entry.date_publishedが被っているケースがある。
     # カンパリのフィードのentry.date_publishedを書き換えた場合などが該当する。
     # そうしたときに少しでもそれらしい並びになるよう、entry.urlも考慮するようにしている。
     # カンパリのフィードはentry.urlがオートインクリメントされているようなので、単一フィード内であればそれできれいに並ぶ。
     "#{entry.date_published}#{entry.url}"
   }.reverse
+
+  return entries, errors
 end
 
 def filter_entries(entries)
