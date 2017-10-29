@@ -43,6 +43,7 @@ get '/feed' do
       item = rss.items.new_item
       item.title = entry.title
       item.link = entry.url
+      # entry.idを利用しても良いが、経験的にentry.urlを利用するのが安全だと思っている。
       item.guid.content = entry.url
       # 便宜上entry.urlをguidに利用しているだけで、パーマリンクとして処理して欲しいわけではない。
       item.guid.isPermaLink = false
