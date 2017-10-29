@@ -62,13 +62,17 @@ end
 def get_entries
   entries = get_settings.source_urls.map{|url|
     feed = FeedNormalizer::FeedNormalizer.parse(open(url))
-    feed.entries.each{|entry|
-      # マージするので元のフィードが分かるようにentry.titleをいじっておく
-      entry.title = "#{entry.title} - #{feed.title}"
-      # 主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく
-      entry.date_published = feed.last_updated if (entry.date_published.year < 0)
-    }
-    feed.entries
+    if feed
+      feed.entries.each{|entry|
+        # マージするので元のフィードが分かるようにentry.titleをいじっておく
+        entry.title = "#{entry.title} - #{feed.title}"
+        # 主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく
+        entry.date_published = feed.last_updated if (entry.date_published.year < 0)
+      }
+      feed.entries
+    else
+      []
+    end
   }.flatten
   entries = filter_entries(entries)
   entries.sort_by{|entry|
