@@ -43,9 +43,8 @@ get '/feed' do
       item = rss.items.new_item
       item.title = entry.title
       item.link = entry.url
-      # entry.idを利用しても良いが、経験的にentry.urlを利用するのが安全だと思っている。
-      item.guid.content = entry.url
-      # 便宜上entry.urlをguidに利用しているだけで、パーマリンクとして処理して欲しいわけではない。
+      item.guid.content = entry.id
+      # 元のフィードでisPermaLinkがどうだったかは保存されていない気がする(要出典)ので、一律でfalseにしておく
       item.guid.isPermaLink = false
       item.description = entry.content
       item.date = entry.date_published
@@ -70,6 +69,8 @@ def get_entries_and_errors
         entry.title = "#{entry.title} - #{feed.title}"
         # 主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく
         entry.date_published = feed.last_updated if (entry.date_published.year < 0)
+        # はてなアンテナのフィードなどはguidが存在しないため、適当なものを入れておく
+        entry.id = "#{entry.url}#{entry.date_published}"
       }
       feed.entries
     else
