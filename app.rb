@@ -70,7 +70,7 @@ def get_entries_and_errors
         # 主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく
         entry.date_published = feed.last_updated if (entry.date_published.year < 0)
         # はてなアンテナのフィードなどはguidが存在しないため、適当なものを入れておく
-        entry.id = "#{entry.url}#{entry.date_published}"
+        entry.id = "#{entry.url}#{entry.date_published}" unless entry.id
       }
       feed.entries
     else
