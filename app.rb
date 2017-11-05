@@ -14,12 +14,6 @@ class Turifo < Sinatra::Base
 
   enable :show_exceptions
 
-  helpers do
-    def base_url
-      "#{request.scheme}://#{request.host_with_port}#{request.script_name}/"
-    end
-  end
-
   get '/' do
     @settings = get_settings
     haml :index
@@ -33,7 +27,7 @@ class Turifo < Sinatra::Base
 
     halt 503, "Failed to save settings: #{settings.errors.full_messages.join(', ')}" unless settings.save
 
-    redirect base_url
+    redirect to('/')
   end
 
   aget '/feed' do
@@ -41,7 +35,7 @@ class Turifo < Sinatra::Base
       rss = RSS::Maker.make('2.0') do |rss|
         rss.channel.title = "#{get_settings.filtering_regexp_str} - turifo"
         rss.channel.description = errors.size > 0 ? errors.join("\n") : 'There is no error.'
-        rss.channel.link = "#{base_url}"
+        rss.channel.link = to('/')
 
         entries.each do |entry|
           item = rss.items.new_item
