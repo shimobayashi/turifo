@@ -5,3 +5,4 @@ servers: 1
 daemonize: true
 rackup: config.ru
 port: 4040
+prefix: /turifo
