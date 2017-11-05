@@ -4,10 +4,39 @@ require 'rss/maker'
 require 'mongoid'
 require 'haml'
 require 'em-http-request'
+require 'thin'
 
 require_relative 'lib/models/settings'
 
 Mongoid.load!('config/mongoid.yml')
+
+# http://recipes.sinatrarb.com/p/embed/event-machine
+def run(opts)
+  EM.run do
+    server  = opts[:server] || 'thin'
+    host    = opts[:host]   || '0.0.0.0'
+    port    = opts[:port]   || '8181'
+    web_app = opts[:app]
+
+    dispatch = Rack::Builder.app do
+      map '/' do
+        run web_app
+      end
+    end
+
+    unless ['thin', 'hatetepe', 'goliath'].include? server
+      raise "Need an EM webserver, but #{server} isn't"
+    end
+
+    Rack::Server.start({
+      app:    dispatch,
+      server: server,
+      Host:   host,
+      Port:   port,
+      signals: false,
+    })
+  end
+end
 
 class Turifo < Sinatra::Base
   register Sinatra::Async
