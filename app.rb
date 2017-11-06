@@ -7,7 +7,7 @@ require 'em-http-request'
 
 require_relative 'lib/models/settings'
 
-Mongoid.load!('config/mongoid.yml')
+Mongoid.load!('config/mongoid.yaml')
 
 class Turifo < Sinatra::Base
   register Sinatra::Async
