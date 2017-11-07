@@ -79,7 +79,6 @@ DEPENDENCIES
   haml
   mongoid (~> 3.0)
   rerun
-  sinatra
   thin
 
 BUNDLED WITH
