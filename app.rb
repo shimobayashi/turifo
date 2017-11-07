@@ -76,10 +76,23 @@ class Turifo < Sinatra::Base
           feed.entries.each{|entry|
             # マージするので元のフィードが分かるようにentry.titleをいじっておく
             entry.title = "#{entry.title} - #{feed.title}"
-            # 主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく
-            entry.date_published = feed.last_updated if (entry.date_published.year < 0)
-            # はてなアンテナのフィードなどはguidが存在しないため、適当なものを入れておく
-            entry.id = "#{entry.url}#{entry.date_published}" unless entry.id
+            # entry.date_publishedが無ければよしなに埋める。
+            #   主に扱いたいカンパリのフィードのentry.date_publishedがぶっ壊れているので、代わりにfeed.last_updatedを突っ込んでおく。
+            #   XPathFeedなどで生成したフィードはそもそも日付系の情報が一切存在しないため、適当に現在時刻で埋めておく。
+            if (!entry.date_published || entry.date_published.year < 0)
+              entry.date_published = feed.last_updated ? feed.last_updated : Time.now
+            end
+            # entry.idが無ければよしなに埋める。
+            unless entry.id
+              # はてなアンテナのフィードはguidが存在しないがURLを採用すると永遠に浮上してこないためdate_publishedとの組み合わせとする。
+              # はてなアンテナ由来のエントリーかどうかはかなり雑に判定しているので、問題が起きたら修正すること。
+              if entry.title =~ /はてなアンテナ/
+                entry.id = "#{entry.url}#{entry.date_published}"
+              # 基本的にはURLをguidとすれば問題ないはずである。
+              else
+                entry.id = "#{entry.url}"
+              end
+            end
           }
           entries.concat(feed.entries)
         else
