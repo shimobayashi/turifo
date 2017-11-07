@@ -124,7 +124,18 @@ class Turifo < Sinatra::Base
     multi.callback do
       multi.responses[:callback].each do |name, http|
         doc = Nokogiri::HTML.parse(http.response)
-        ogimage = doc.css('//meta[property="og:image"]/@content').to_s
+
+        ogimage = nil
+        # カンパリであればog:imageの代わりに釣り場の地図を利用する。
+        # フィードで一覧するときにはog:imageよりも釣果の多い釣り場を把握したいため。
+        if http.req.uri.host == 'fishing.ne.jp'
+          attr = doc.css('//.map_area/img/@src').first || doc.css('//.map_area/img/@data-original').first
+          ogimage = attr ? attr.value : nil
+        else
+          attr = doc.css('//meta[property="og:image"]/@content').first
+          ogimage = attr ? attr.value : nil
+        end
+
         if ogimage && ogimage != ""
           entry = entry_by_url[http.req.uri.to_s]
           entry.content = %{<img src="#{ogimage}" /><br />#{entry.content}}
