@@ -4,6 +4,7 @@ require 'rss/maker'
 require 'mongoid'
 require 'haml'
 require 'em-http-request'
+require 'nokogiri'
 
 require_relative 'lib/models/settings'
 
@@ -91,15 +92,17 @@ class Turifo < Sinatra::Base
       end
 
       entries = filter_entries(entries)
-      entries = entries.sort_by{|entry|
-        # entry.date_publishedが被っているケースがある。
-        # カンパリのフィードのentry.date_publishedを書き換えた場合などが該当する。
-        # そうしたときに少しでもそれらしい並びになるよう、entry.urlも考慮するようにしている。
-        # カンパリのフィードはentry.urlがオートインクリメントされているようなので、単一フィード内であればそれできれいに並ぶ。
-        "#{entry.date_published}#{entry.url}"
-      }.reverse
+      insert_ogimage_to_entries(entries) do |entries|
+        entries = entries.sort_by{|entry|
+          # entry.date_publishedが被っているケースがある。
+          # カンパリのフィードのentry.date_publishedを書き換えた場合などが該当する。
+          # そうしたときに少しでもそれらしい並びになるよう、entry.urlも考慮するようにしている。
+          # カンパリのフィードはentry.urlがオートインクリメントされているようなので、単一フィード内であればそれできれいに並ぶ。
+          "#{entry.date_published}#{entry.url}"
+        }.reverse
 
-      yield entries, errors
+        yield entries, errors
+      end
     end
   end
 
@@ -108,5 +111,31 @@ class Turifo < Sinatra::Base
     entries.select{|entry|
       "#{entry.title}#{entry.description}" =~ regexp
     }
+  end
+
+  def insert_ogimage_to_entries(entries)
+    multi = EM::MultiRequest.new
+
+    entries.each do |entry|
+      multi.add(entry.url, EM::HttpRequest.new(entry.url).get)
+    end
+
+    entry_by_url = Hash[*entries.map{|entry| [entry.url, entry]}.flatten(1)]
+    multi.callback do
+      multi.responses[:callback].each do |name, http|
+        doc = Nokogiri::HTML.parse(http.response)
+        ogimage = doc.css('//meta[property="og:image"]/@content').to_s
+        if ogimage && ogimage != ""
+          entry = entry_by_url[http.req.uri.to_s]
+          entry.content = %{<img src="#{ogimage}" /><br />#{entry.content}}
+        end
+      end
+
+      multi.responses[:errback].each do |name, http|
+        nil
+      end
+
+      yield entries
+    end
   end
 end

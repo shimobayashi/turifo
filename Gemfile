@@ -6,6 +6,7 @@ gem 'mongoid', '~> 3.0'
 gem 'haml'
 gem 'em-http-request'
 gem 'async_sinatra'
+gem 'nokogiri'
 
 group :development do
     gem 'rerun'
