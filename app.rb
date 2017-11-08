@@ -130,7 +130,7 @@ class Turifo < Sinatra::Base
     multi = EM::MultiRequest.new
 
     # imgタグらしきものが無いエントリーのみを対象とする。
-    no_img_entries = entries.select{|entry| entry.content !~ /&lt;img/}
+    no_img_entries = entries.select{|entry| entry.content !~ /img/}
     # そもそも対象となるエントリーが無ければ何もせずに終わる。
     if no_img_entries.size == 0
       yield entries
