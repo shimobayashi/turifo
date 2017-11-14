@@ -15,6 +15,7 @@ GEM
     concurrent-ruby (1.0.5)
     cookiejar (0.3.2)
     daemons (1.2.4)
+    dotenv (2.2.1)
     em-http-request (1.1.2)
       addressable (>= 2.3.4)
       cookiejar
@@ -77,6 +78,7 @@ PLATFORMS
 
 DEPENDENCIES
   async_sinatra
+  dotenv
   em-http-request
   feed-normalizer
   haml

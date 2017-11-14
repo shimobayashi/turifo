@@ -7,6 +7,7 @@ require 'em-http-request'
 require 'nokogiri'
 require 'net/https'
 require 'json'
+require 'dotenv/load'
 
 require_relative 'lib/models/settings'
 
