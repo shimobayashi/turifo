@@ -75,7 +75,8 @@ class Turifo < Sinatra::Base
               api_key: POST_API_KEY,
               row_contents: [
                 entry.id,
-                entry.date_published,
+                # Google Spreadsheet内でJSTの日付として扱われる文字列へ変換する。
+                entry.date_published.to_time.localtime('+09:00').strftime('%F %T'),
                 entry.title,
                 entry.url,
                 entry.content,
