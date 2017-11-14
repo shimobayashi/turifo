@@ -162,11 +162,21 @@ class Turifo < Sinatra::Base
   def insert_ogimage_to_entries(entries)
     multi = EM::MultiRequest.new
 
-    entries.each do |entry|
+    # imgタグらしきものが無いエントリーのみを対象とする。
+    no_img_entries = entries.select{|entry| entry.content !~ /img/}
+    # そもそも対象となるエントリーが無ければ何もせずに終わる。
+    if no_img_entries.size == 0
+      yield entries
+      return
+    end
+
+    no_img_entries.each do |entry|
       multi.add(entry.url, EM::HttpRequest.new(entry.url).get)
     end
 
+    # imgタグらしきものが無いエントリーのみに絞ってもいいが、将来的に混乱しそうなのであえて絞らない。
     entry_by_url = Hash[*entries.map{|entry| [entry.url, entry]}.flatten(1)]
+
     multi.callback do
       multi.responses[:callback].each do |name, http|
         doc = Nokogiri::HTML.parse(http.response)
@@ -189,7 +199,7 @@ class Turifo < Sinatra::Base
       end
 
       multi.responses[:errback].each do |name, http|
-        nil
+        # 何もしない。
       end
 
       yield entries
