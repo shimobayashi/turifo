@@ -5,15 +5,21 @@ require 'mongoid'
 require 'haml'
 require 'em-http-request'
 require 'nokogiri'
+require 'net/https'
+require 'json'
 
 require_relative 'lib/models/settings'
-
-Mongoid.load!('config/mongoid.yml')
 
 class Turifo < Sinatra::Base
   register Sinatra::Async
 
   enable :show_exceptions
+
+  configure do
+    Mongoid.load!('config/mongoid.yml')
+    POST_API_URL = ENV['POST_API_URL']
+    POST_API_KEY = ENV['POST_API_KEY']
+  end
 
   get '/' do
     @settings = get_settings
@@ -52,6 +58,33 @@ class Turifo < Sinatra::Base
 
       content_type 'application/rss+xml', :charset => 'utf-8'
       body rss.to_s
+
+      if POST_API_URL && POST_API_URL != ""
+        EM::defer do
+          uri = URI.parse(POST_API_URL)
+          http = Net::HTTP.new(uri.host, uri.port)
+
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+          # 雑にentry毎にリクエストを投げているので、その内まとめてリクエストするようにして効率化したい。
+          entries.each do |entry|
+            req = Net::HTTP::Post.new(uri.path)
+            req.set_form_data({
+              api_key: POST_API_KEY,
+              row_contents: [
+                entry.id,
+                entry.date_published,
+                entry.title,
+                entry.url,
+                entry.content,
+              ].to_json,
+            })
+
+            res = http.request(req)
+          end
+        end
+      end
     end
   end
 
