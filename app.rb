@@ -140,7 +140,7 @@ class Turifo < Sinatra::Base
       end
 
       entries = filter_entries(entries)
-      insert_ogimage_to_entries(entries) do |entries|
+      insert_metainfo_to_entries(entries) do |entries|
         entries = entries.sort_by{|entry|
           # entry.date_publishedが被っているケースがある。
           # カンパリのフィードのentry.date_publishedを書き換えた場合などが該当する。
@@ -161,22 +161,19 @@ class Turifo < Sinatra::Base
     }
   end
 
-  def insert_ogimage_to_entries(entries)
+  def insert_metainfo_to_entries(entries)
     multi = EM::MultiRequest.new
 
-    # imgタグらしきものが無いエントリーのみを対象とする。
-    no_img_entries = entries.select{|entry| entry.content !~ /img/}
     # そもそも対象となるエントリーが無ければ何もせずに終わる。
-    if no_img_entries.size == 0
+    if entries.size == 0
       yield entries
       return
     end
 
-    no_img_entries.each do |entry|
+    entries.each do |entry|
       multi.add(entry.url, EM::HttpRequest.new(entry.url).get)
     end
 
-    # imgタグらしきものが無いエントリーのみに絞ってもいいが、将来的に混乱しそうなのであえて絞らない。
     entry_by_url = Hash[*entries.map{|entry| [entry.url, entry]}.flatten(1)]
 
     multi.callback do
