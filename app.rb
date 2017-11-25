@@ -181,19 +181,28 @@ class Turifo < Sinatra::Base
         doc = Nokogiri::HTML.parse(http.response)
 
         ogimage = nil
+        point = nil
         # カンパリであればog:imageの代わりに釣り場の地図を利用する。
         # フィードで一覧するときにはog:imageよりも釣果の多い釣り場を把握したいため。
+        # さらに、釣り場情報も取得する。
         if http.req.uri.host == 'fishing.ne.jp'
           attr = doc.css('//.map_area/img/@src').first || doc.css('//.map_area/img/@data-original').first
           ogimage = attr ? attr.value : nil
+
+          attr = doc.css("//.area_title").first
+          point = attr ? attr.text : nil
+        # その他のサイトであればog:imageをそのまま利用する。
         else
           attr = doc.css('//meta[property="og:image"]/@content').first
           ogimage = attr ? attr.value : nil
         end
 
+        entry = entry_by_url[http.req.uri.to_s]
         if ogimage && ogimage != ""
-          entry = entry_by_url[http.req.uri.to_s]
           entry.content = %{<img src="#{ogimage}" /><br />#{entry.content}}
+        end
+        if point && point != ""
+          entry.content = %{#{point}<br />#{entry.content}}
         end
       end
 
