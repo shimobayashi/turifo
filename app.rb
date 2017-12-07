@@ -5,15 +5,22 @@ require 'mongoid'
 require 'haml'
 require 'em-http-request'
 require 'nokogiri'
+require 'net/https'
+require 'json'
+require 'dotenv/load'
 
 require_relative 'lib/models/settings'
-
-Mongoid.load!('config/mongoid.yml')
 
 class Turifo < Sinatra::Base
   register Sinatra::Async
 
   enable :show_exceptions
+
+  configure do
+    Mongoid.load!('config/mongoid.yml')
+    POST_API_URL = ENV['POST_API_URL']
+    POST_API_KEY = ENV['POST_API_KEY']
+  end
 
   get '/' do
     @settings = get_settings
@@ -52,6 +59,34 @@ class Turifo < Sinatra::Base
 
       content_type 'application/rss+xml', :charset => 'utf-8'
       body rss.to_s
+
+      if POST_API_URL && POST_API_URL != ""
+        EM::defer do
+          uri = URI.parse(POST_API_URL)
+          http = Net::HTTP.new(uri.host, uri.port)
+
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+          # 雑にentry毎にリクエストを投げているので、その内まとめてリクエストするようにして効率化したい。
+          entries.each do |entry|
+            req = Net::HTTP::Post.new(uri.path)
+            req.set_form_data({
+              api_key: POST_API_KEY,
+              row_contents: [
+                entry.id,
+                # Google Spreadsheet内でJSTの日付として扱われる文字列へ変換する。
+                entry.date_published.to_time.localtime('+09:00').strftime('%F %T'),
+                entry.title,
+                entry.url,
+                entry.content,
+              ].to_json,
+            })
+
+            res = http.request(req)
+          end
+        end
+      end
     end
   end
 
@@ -105,7 +140,7 @@ class Turifo < Sinatra::Base
       end
 
       entries = filter_entries(entries)
-      insert_ogimage_to_entries(entries) do |entries|
+      insert_metainfo_to_entries(entries) do |entries|
         entries = entries.sort_by{|entry|
           # entry.date_publishedが被っているケースがある。
           # カンパリのフィードのentry.date_publishedを書き換えた場合などが該当する。
@@ -126,22 +161,19 @@ class Turifo < Sinatra::Base
     }
   end
 
-  def insert_ogimage_to_entries(entries)
+  def insert_metainfo_to_entries(entries)
     multi = EM::MultiRequest.new
 
-    # imgタグらしきものが無いエントリーのみを対象とする。
-    no_img_entries = entries.select{|entry| entry.content !~ /img/}
     # そもそも対象となるエントリーが無ければ何もせずに終わる。
-    if no_img_entries.size == 0
+    if entries.size == 0
       yield entries
       return
     end
 
-    no_img_entries.each do |entry|
+    entries.each do |entry|
       multi.add(entry.url, EM::HttpRequest.new(entry.url).get)
     end
 
-    # imgタグらしきものが無いエントリーのみに絞ってもいいが、将来的に混乱しそうなのであえて絞らない。
     entry_by_url = Hash[*entries.map{|entry| [entry.url, entry]}.flatten(1)]
 
     multi.callback do
@@ -149,19 +181,35 @@ class Turifo < Sinatra::Base
         doc = Nokogiri::HTML.parse(http.response)
 
         ogimage = nil
+        choka = nil
+        point = nil
         # カンパリであればog:imageの代わりに釣り場の地図を利用する。
         # フィードで一覧するときにはog:imageよりも釣果の多い釣り場を把握したいため。
+        # さらに、釣り場情報・釣果情報も取得する。
         if http.req.uri.host == 'fishing.ne.jp'
           attr = doc.css('//.map_area/img/@src').first || doc.css('//.map_area/img/@data-original').first
           ogimage = attr ? attr.value : nil
+
+          attr = doc.css("//#postBox/.postChoka/p")
+          choka = attr ? attr.text.strip : nil
+
+          attr = doc.css("//.area_title").first
+          point = attr ? attr.text.strip : nil
+        # その他のサイトであればog:imageをそのまま利用する。
         else
           attr = doc.css('//meta[property="og:image"]/@content').first
           ogimage = attr ? attr.value : nil
         end
 
+        entry = entry_by_url[http.req.uri.to_s]
         if ogimage && ogimage != ""
-          entry = entry_by_url[http.req.uri.to_s]
           entry.content = %{<img src="#{ogimage}" /><br />#{entry.content}}
+        end
+        if choka && choka != ""
+          entry.content = %{#{choka}<br />#{entry.content}}
+        end
+        if point && point != ""
+          entry.content = %{#{point}<br />#{entry.content}}
         end
       end
 

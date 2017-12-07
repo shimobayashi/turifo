@@ -7,6 +7,7 @@ gem 'haml'
 gem 'em-http-request'
 gem 'async_sinatra'
 gem 'nokogiri'
+gem 'dotenv'
 
 group :development do
     gem 'rerun'
