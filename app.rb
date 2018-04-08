@@ -170,6 +170,7 @@ class Turifo < Sinatra::Base
       return
     end
 
+    entries.uniq! {|entry| entry.url}
     entries.each do |entry|
       multi.add(entry.url, EM::HttpRequest.new(entry.url).get)
     end
