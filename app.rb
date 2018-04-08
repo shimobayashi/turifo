@@ -83,7 +83,11 @@ class Turifo < Sinatra::Base
               ].to_json,
             })
 
-            res = http.request(req)
+            begin
+              res = http.request(req)
+            rescue Net::ReadTimeout => e
+              warn e
+            end
           end
         end
       end
