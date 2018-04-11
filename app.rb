@@ -85,7 +85,7 @@ class Turifo < Sinatra::Base
 
             begin
               res = http.request(req)
-            rescue Net::ReadTimeout => e
+            rescue Net::ReadTimeout, Net::OpenTimeout => e
               warn e
             end
           end
