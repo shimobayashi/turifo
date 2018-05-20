@@ -15,6 +15,7 @@ class Turifo < Sinatra::Base
   register Sinatra::Async
 
   enable :show_exceptions
+  enable :logging
 
   configure do
     Mongoid.load!('config/mongoid.yml')
